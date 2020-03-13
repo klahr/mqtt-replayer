@@ -14,6 +14,7 @@ struct Message {
 	std::string Topic;
 	std::string Payload;
 	int Time;
+	bool Retained;
 };
 
 long long getEpochTime() {
@@ -25,7 +26,12 @@ long long getEpochTime() {
 	return millisecondsSinceEpoch;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+	if (argc < 2) {
+		printf("./replayer mqtt_messages.log");
+		return 0;
+	}
+
 	MQTTClient_connectOptions opts = MQTTClient_connectOptions_initializer;
 	opts.keepAliveInterval = 20;
 	opts.cleansession = 1;
@@ -38,7 +44,7 @@ int main() {
 		return -1;
 	}
 
-	std::ifstream infile("mqtt_messages.log");
+	std::ifstream infile(argv[1]);
 	std::string line;
 	MQTTClient_deliveryToken token;
 	long long start = getEpochTime();
@@ -50,18 +56,17 @@ int main() {
 		message.Payload = json["payload"].string_value();
 		message.Time = json["timestamp"].int_value();
 		message.Topic = json["topic"].string_value();
+		message.Retained = json["retained"].bool_value();
 
 		long long now = getEpochTime();
 		long long elapsed = now - start;
-		std::cout << elapsed << std::endl;
 		if (elapsed < message.Time) {
 			int timeToSleep = message.Time - elapsed;
-			printf("sleeping: %d", timeToSleep);
 			usleep(timeToSleep * 1000);
 		}
-		printf("Publishing message: %s", line.c_str());
+		//printf("Publishing message: %s", line.c_str());
 
-		MQTTClient_publish(client, message.Topic.c_str(), message.Payload.length(), const_cast<void*>(static_cast<const void*>(message.Payload.c_str())), 1, 0, &token);
+		MQTTClient_publish(client, message.Topic.c_str(), message.Payload.length(), const_cast<void*>(static_cast<const void*>(message.Payload.c_str())), 1, message.Retained ? 1 : 0, &token);
 	}
 
 	MQTTClient_disconnect(client, 0);
