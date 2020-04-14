@@ -6,7 +6,7 @@ then
 	exit 1
 fi
 
-for (( ; ; ))
+while true
 do
 	./replayer $1
 done
