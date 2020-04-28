@@ -49,6 +49,9 @@ int main(int argc, char* argv[]) {
 	MQTTClient_deliveryToken token;
 	long long start = getEpochTime();
 	while (std::getline(infile, line)) {
+		if (line[0] == '#') {
+			continue;
+		}
 		std::string err;
 		json11::Json json = json11::Json::parse(line.c_str(), err);
 		Message message;
